@@ -7,26 +7,53 @@ namespace Trivium;
 
 public class Trivium
 {
-    private BitArray keyBits;
-    private BitArray IVBits;
-    private BitArray internalState;
+    private BitArray internalState = null;
 
-    public Trivium(string key, string IV)
+    public bool[] decryption(string key, string IV, bool[] cipherText)
     {
         this.stateInitialization(key, IV);
-        return;
+
+        List<bool> keyStream = this.keyStreamGeneration(cipherText.Length);
+
+        List<bool> plainText = new();
+
+        for (int i = 0; i < cipherText.Length; i++)
+        {
+            plainText.Add(
+                cipherText[i] ^ keyStream[i]
+            );
+        }
+
+        this.internalState = null;
+
+        return plainText.ToArray();
     }
 
-    public void encryption(){
+    public bool[] encryption(string key, string IV, string plainText)
+    {
+        bool[] textInBits = this.stringToBits(plainText);
 
+        this.stateInitialization(key, IV);
+
+        List<bool> keyStream = this.keyStreamGeneration(textInBits.Length);
+        List<bool> encryptedText = new();
+
+        for (int i = 0; i < textInBits.Length; i++)
+        {
+            encryptedText.Add(
+                textInBits[i] ^ keyStream[i]
+            );
+        }
+
+        this.internalState = null;
+
+        return encryptedText.ToArray();
     }
-
 
     private void stateInitialization(string key, string IV)
     {
-
-        List<bool> keyBits = this.hexToBitsInBool(key).ToList();
-        List<bool> IVBits = this.hexToBitsInBool(IV).ToList();
+        List<bool> keyBits = this.hexToBits(key).ToList();
+        List<bool> IVBits = this.hexToBits(IV).ToList();
 
         List<bool> allBitsState = new();
 
@@ -41,12 +68,11 @@ public class Trivium
 
         this.internalState = new BitArray(allBitsState.ToArray());
 
-        this.keyGeneration();
+        this.keyStreamGeneration();
         return;
     }
 
-
-    private List<bool> keyGeneration(int size = 4 * 288)
+    private List<bool> keyStreamGeneration(int size = 4 * 288)
     {
         List<bool> z = new();
         bool t1, t2, t3;
@@ -75,19 +101,23 @@ public class Trivium
         }
         return z;
     }
-    public bool[] hexToBitsInBool(string hexValue)
+
+    public bool[] hexToBits(string hexValue)
     {
+        //helps to save 0's from being deleted when getting bytes from BigInteger
+        hexValue = "1" + hexValue;
 
-        BitArray bitArray = new(
-            (BigInteger.Parse(
-            hexValue, System.Globalization.NumberStyles.HexNumber)
-            ).ToByteArray()
-            );
+        List<byte> bytes =
+        BigInteger.Parse(hexValue, System.Globalization.NumberStyles.HexNumber)
+        .ToByteArray()
+        .ToList();
 
+        bytes.RemoveAt(bytes.Count - 1);
+
+        BitArray bitArray = new(bytes.ToArray());
         bool[] bits = new bool[bitArray.Length];
 
         bitArray.CopyTo(bits, 0);
-        Array.Reverse(bits);
 
         /* odd hexValue.Length
         this can help if there is unexpected 1's that bitarray create
@@ -102,51 +132,63 @@ public class Trivium
         return bits;
     }
 
-    public bool[] stringToBitsInBool(string plainText)
+    public bool[] stringToBits(string plainText)
     {
         Encoding enc = Encoding.UTF8;
-
         byte[] bytes = enc.GetBytes(plainText);
-
-        Array.Reverse(bytes);
 
         BitArray bitArray = new(bytes);
 
         bool[] bits = new bool[bitArray.Length];
-
         bitArray.CopyTo(bits, 0);
-
-        Array.Reverse(bits);
 
         return bits;
     }
 
-    public void printBits(BitArray bitArray = null)
+    public string bitsToString(bool[] textInBits)
+    {
+        BitArray bitArray = new(textInBits);
+        byte[] bytes = new byte[(bitArray.Length + 7) / 8];
+
+        bitArray.CopyTo(bytes, 0);
+
+        return Encoding.UTF8.GetString(bytes);
+    }
+
+    public string bitsToHex(bool[] bits)
+    {
+        //we need to do all this reverses cause bitarray is messing with little/big endians
+        Array.Reverse(bits);
+        BitArray bitArray = new BitArray(bits);
+
+        // equation for getting a needed number of bytes
+        byte[] bytes = new byte[(bitArray.Length + 7) / 8];
+
+        bitArray.CopyTo(bytes, 0);
+        Array.Reverse(bytes);
+
+        //this reverse to make initial bits array come back to normal
+        Array.Reverse(bits);
+        return BitConverter.ToString(bytes).Replace("-", "");
+    }
+
+    //method, if you want to print bits to check the between results
+    public string printBits(BitArray bitArray = null)
     {
         if (bitArray is null) bitArray = this.internalState;
 
-        int breaker = 0;
         string buildBits = "";
-
         foreach (bool bite in bitArray)
         {
-            if (breaker == 8)
-            {
-                Console.Write(" ");
-                breaker = 0;
-            }
             if (bite)
             {
-                Console.Write(1);
                 buildBits += "1";
             }
             else
             {
-                Console.Write(0);
                 buildBits += "0";
             }
-            breaker++;
         }
-
+        return buildBits;
     }
 }

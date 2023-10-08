@@ -2,40 +2,46 @@
 using System.Collections;
 using System.Numerics;
 using System.Security.Cryptography;
-using Nito.Collections;
 
 namespace Trivium;
 
-
-/*
-use right shift for moving bits in array
-*/
 class Program
 {
     static void Main(string[] args)
     {
-        string hexValue = "ABC";
-
-
-        Trivium teswt = new("CB4579AD1CA63FB5F2AA", "CB4520FC1CA63F830D3A");
-
-        //teswt.printBits();
-// false  true true false true
-        var strBits = teswt.stringToBitsInBool("Hello");
-
-        teswt.printBits(new BitArray (strBits));
-
-       /* BigInteger decimalValue = BigInteger.Parse(hexValue, System.Globalization.NumberStyles.HexNumber);
-
-        List<byte> bytes = (decimalValue.ToByteArray()).ToList();
-
-        BigInteger tes = 1;
-        BitArray bydtes = new(tes.ToByteArray());
-*/
-        /* Convert all (key, IV and others values like 0s and 1s) to bytes array,
-        piece them together and convert all to a BitArray */
-
-
+        Program.program();
         Console.ReadLine();
+    }
+
+    static void program()
+    {
+        Console.Write("Welcome to a Trivium cipher program!\n\n" +
+        "Please, enter text you want to encrypt: ");
+        string plainText = Console.ReadLine();
+
+
+        Console.Write("\nNow, enter your hexadecimal key (20 hex) or\n" +
+                    "use example key - A1B2C3D4E5F6A1B2C3D4 : ");
+        string key = Console.ReadLine();
+
+
+        Console.Write("\nNow, enter your hexadecimal IV (20 hex) or\n" +
+                    "use example IV - 4A8F372D1B96C0A3E5D7 : ");
+        string IV = Console.ReadLine();
+
+
+        Trivium trivium = new();
+
+        bool[] encryptedText = trivium.encryption(key, IV, plainText);
+
+        Console.WriteLine("\nYour encrypted message:\n"
+        + $"{trivium.bitsToHex(encryptedText)}\n");
+
+        string decryptedText = trivium.bitsToString(
+            trivium.decryption(key, IV, encryptedText)
+        );
+
+        Console.WriteLine($"\nYour decrypted message:\n" +
+                        $"{decryptedText}\n");
     }
 }
