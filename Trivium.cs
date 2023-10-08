@@ -13,73 +13,140 @@ public class Trivium
 
     public Trivium(string key, string IV)
     {
-
-        internalState = stateInit(key, IV);
+        this.stateInitialization(key, IV);
         return;
     }
 
-    private BitArray stateInit(string key, string IV)
+    public void encryption(){
+
+    }
+
+
+    private void stateInitialization(string key, string IV)
     {
-        BitArray state = new BitArray(length: 288);
 
-
-        bool[] keyBits = hexToBits(key);
-        bool[] IVBits = hexToBits(IV);
+        List<bool> keyBits = this.hexToBitsInBool(key).ToList();
+        List<bool> IVBits = this.hexToBitsInBool(IV).ToList();
 
         List<bool> allBitsState = new();
 
-        allBitsState.AddRange(keyBits.ToList());
+        allBitsState.AddRange(keyBits);
         allBitsState.AddRange(Enumerable.Repeat(false, 13));
 
-        allBitsState.AddRange(IVBits.ToList());
+        allBitsState.AddRange(IVBits);
         allBitsState.AddRange(Enumerable.Repeat(false, 4));
 
         allBitsState.AddRange(Enumerable.Repeat(false, 108));
         allBitsState.AddRange(Enumerable.Repeat(true, 3));
 
+        this.internalState = new BitArray(allBitsState.ToArray());
 
-        return new BitArray(allBitsState.ToArray());
+        this.keyGeneration();
+        return;
     }
 
-    static public bool[] hexToBits(string hexValue)
+
+    private List<bool> keyGeneration(int size = 4 * 288)
     {
-        BigInteger decimalValue = BigInteger.Parse(hexValue, System.Globalization.NumberStyles.HexNumber);
+        List<bool> z = new();
+        bool t1, t2, t3;
 
-        // Encoding enc = Encoding.ASCII;
+        for (int i = 0; i < size; i++)
+        {
+            t1 = this.internalState[65] ^ this.internalState[92];
 
-        // BitArray bitArray = new(Encoding.ASCII.GetBytes(hexValue));
+            t2 = this.internalState[161] ^ this.internalState[176];
 
-        BitArray bitArray = new(decimalValue.ToByteArray());
+            t3 = this.internalState[242] ^ this.internalState[287];
+
+            z.Add(t1 ^ t2 ^ t3);
+
+            t1 = t1 ^ (this.internalState[90] & this.internalState[91]) ^ this.internalState[170];
+
+            t2 = t2 ^ (this.internalState[174] & this.internalState[175]) ^ this.internalState[263];
+
+            t3 = t3 ^ (this.internalState[285] & this.internalState[286]) ^ this.internalState[68];
+
+            this.internalState.LeftShift(1);
+
+            this.internalState[0] = t1;
+            this.internalState[93] = t2;
+            this.internalState[177] = t3;
+        }
+        return z;
+    }
+    public bool[] hexToBitsInBool(string hexValue)
+    {
+
+        BitArray bitArray = new(
+            (BigInteger.Parse(
+            hexValue, System.Globalization.NumberStyles.HexNumber)
+            ).ToByteArray()
+            );
 
         bool[] bits = new bool[bitArray.Length];
 
         bitArray.CopyTo(bits, 0);
         Array.Reverse(bits);
 
-        //        bitArray = new BitArray(bits);
+        /* odd hexValue.Length
+        this can help if there is unexpected 1's that bitarray create
+        if the hexValue.Length is odd (нечетное)
 
-
-        // int breaker = 0;
-        // string buildBits = "";
-
-        // foreach (bool bite in bitArray)
-        // {
-        //     if (breaker == 4)
-        //     {
-        //         Console.Write(" ");
-        //         breaker = 0;
-        //     }
-        //     if (bite){
-        //         Console.Write(1);
-        //         buildBits+="1";
-        //     }
-        //     else {
-        //         Console.Write(0);
-        //          buildBits+="0";
-        //     }
-        //     breaker++;
-        // }
+        if (hexValue.Length % 2 != 0){
+            bool[] newBits = new bool[bits.Length - 4];
+            Array.Copy(bits, 4, newBits, 0, newBits.Length);
+            return newBits;
+         } else return bits; */
 
         return bits;
+    }
+
+    public bool[] stringToBitsInBool(string plainText)
+    {
+        Encoding enc = Encoding.UTF8;
+
+        byte[] bytes = enc.GetBytes(plainText);
+
+        Array.Reverse(bytes);
+
+        BitArray bitArray = new(bytes);
+
+        bool[] bits = new bool[bitArray.Length];
+
+        bitArray.CopyTo(bits, 0);
+
+        Array.Reverse(bits);
+
+        return bits;
+    }
+
+    public void printBits(BitArray bitArray = null)
+    {
+        if (bitArray is null) bitArray = this.internalState;
+
+        int breaker = 0;
+        string buildBits = "";
+
+        foreach (bool bite in bitArray)
+        {
+            if (breaker == 8)
+            {
+                Console.Write(" ");
+                breaker = 0;
+            }
+            if (bite)
+            {
+                Console.Write(1);
+                buildBits += "1";
+            }
+            else
+            {
+                Console.Write(0);
+                buildBits += "0";
+            }
+            breaker++;
+        }
+
     }
 }
