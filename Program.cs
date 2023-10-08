@@ -16,12 +16,14 @@ class Program
 
         Program.ValuesInitialize(ref plainText, ref key, ref IV);
 
+        Program.PrintValues(plainText, key, IV);
+
         Trivium trivium = new();
 
         bool[] encryptedText = trivium.Encryption(key, IV, plainText);
 
         Console.WriteLine("\nYour encrypted message:\n"
-        + $"{trivium.BitsToHex(encryptedText)}\n");
+        + $"{trivium.BitsToHex(encryptedText)}");
 
         string decryptedText = trivium.BitsToString(
             trivium.Decryption(key, IV, encryptedText)
@@ -29,6 +31,14 @@ class Program
 
         Console.WriteLine($"\nYour decrypted message:\n" +
                         $"{decryptedText}\n");
+    }
+
+    static public void PrintValues(string plainText, string key, string IV){
+        Console.WriteLine($"Text: {plainText}\n");
+
+        Console.WriteLine($"Key:  {key}");
+
+        Console.WriteLine($"IV:   {IV}\n");
     }
 
     static public void ValuesInitialize(ref string plainText, ref string key, ref string IV)
@@ -52,21 +62,25 @@ class Program
 
     static public void InputHexValues(ref string value)
     {
-        value = Console.ReadLine();
-        BigInteger outParam;
-        if (value.Length != 20)
+        while (true)
         {
-            Console.Write("Length should be 20 symbols!\nTry again: ");
-            Program.InputHexValues(ref value);
+            value = Console.ReadLine();
+            BigInteger outParam;
+
+            if (value.Length != 20)
+            {
+                Console.Write("Invalid input: Length should be 20 characters!\nTry again: ");
+                continue; //invalid input, loop restarts
+            }
+            else if (!BigInteger.TryParse(value, System.Globalization.NumberStyles.HexNumber, default, out outParam))
+            {
+                Console.Write("Invalid input: Given hex is not in right format!\nTry again: ");
+                continue; //invalid input, loop restarts
+            }
+
+            //input is valid, break loop
+            Console.Clear();
+            break;
         }
-        else if (!BigInteger.TryParse(
-            value, System.Globalization.NumberStyles.HexNumber, default, out outParam
-            )
-        )
-        {
-            Console.Write("Given hex is not in right format!\nTry again: ");
-            Program.InputHexValues(ref value);
-        }
-        return;
     }
 }
