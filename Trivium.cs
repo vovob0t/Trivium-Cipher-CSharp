@@ -8,18 +8,18 @@ public class Trivium
 {
     private BitArray _internalState = null;
 
-    public bool[] Decryption(string key, string IV, bool[] cipherText)
+    public bool[] Decryption(string key, string IV, bool[] encryptedText)
     {
         this._StateInitialization(key, IV);
 
-        List<bool> keyStream = this._KeyStreamGeneration(cipherText.Length);
+        List<bool> keyStream = this._KeyStreamGeneration(encryptedText.Length);
 
         List<bool> plainText = new();
 
-        for (int i = 0; i < cipherText.Length; i++)
+        for (int i = 0; i < encryptedText.Length; i++)
         {
             plainText.Add(
-                cipherText[i] ^ keyStream[i]
+                encryptedText[i] ^ keyStream[i]
             );
         }
 
@@ -30,7 +30,7 @@ public class Trivium
 
     public bool[] Encryption(string key, string IV, string plainText)
     {
-        bool[] textInBits = this.StringToBits(plainText);
+        bool[] textInBits = this._StringToBits(plainText);
 
         this._StateInitialization(key, IV);
 
@@ -51,8 +51,8 @@ public class Trivium
 
     private void _StateInitialization(string key, string IV)
     {
-        List<bool> keyBits = this.HexToBits(key).ToList();
-        List<bool> IVBits = this.HexToBits(IV).ToList();
+        List<bool> keyBits = this._HexToBits(key).ToList();
+        List<bool> IVBits = this._HexToBits(IV).ToList();
 
         List<bool> allBitsState = new();
 
@@ -101,7 +101,7 @@ public class Trivium
         return z;
     }
 
-    public bool[] HexToBits(string hexValue)
+    private bool[] _HexToBits(string hexValue)
     {
         //helps to save 0's from being deleted when getting bytes from BigInteger
         hexValue = "1" + hexValue;
@@ -121,7 +121,7 @@ public class Trivium
         return bits;
     }
 
-    public bool[] StringToBits(string plainText)
+    private bool[] _StringToBits(string plainText)
     {
         Encoding enc = Encoding.UTF8;
         byte[] bytes = enc.GetBytes(plainText);
@@ -132,16 +132,6 @@ public class Trivium
         bitArray.CopyTo(bits, 0);
 
         return bits;
-    }
-
-    public string BitsToString(bool[] textInBits)
-    {
-        BitArray bitArray = new(textInBits);
-        byte[] bytes = new byte[(bitArray.Length + 7) / 8];
-
-        bitArray.CopyTo(bytes, 0);
-
-        return Encoding.UTF8.GetString(bytes);
     }
 
     public string BitsToHex(bool[] bits)
@@ -159,6 +149,16 @@ public class Trivium
         //this reverse to make initial bits array come back to normal
         Array.Reverse(bits);
         return BitConverter.ToString(bytes).Replace("-", "");
+    }
+
+    public string BitsToString(bool[] textInBits)
+    {
+        BitArray bitArray = new(textInBits);
+        byte[] bytes = new byte[(bitArray.Length + 7) / 8];
+
+        bitArray.CopyTo(bytes, 0);
+
+        return Encoding.UTF8.GetString(bytes);
     }
 
     //method, if you want to print bits to check the between results
